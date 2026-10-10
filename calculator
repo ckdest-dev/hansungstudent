@@ -1,0 +1,321 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ea580c">
+<title>산업환기 계산기</title>
+<style>
+:root {
+  --orange: #ea580c;
+  --dark: #9a3412;
+  --pale: #fff7ed;
+  --line: #fed7aa;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #fffaf5;
+  color: #292524;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+header {
+  background: linear-gradient(135deg,#f97316,#c2410c);
+  color: white;
+  padding: 25px 20px;
+}
+header h1 { font-size: 23px; margin: 0 0 8px; }
+header p { margin: 0; font-size: 14px; color: #ffedd5; }
+main { max-width: 600px; margin: auto; padding: 18px; }
+.panel {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 5px 18px #9a34120a;
+}
+h2 { font-size: 17px; margin: 0 0 16px; color: var(--dark); }
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 650;
+  margin: 15px 0 7px;
+}
+input, select {
+  width: 100%;
+  min-height: 47px;
+  border: 1px solid #d6d3d1;
+  border-radius: 10px;
+  padding: 11px;
+  background: white;
+  color: #292524;
+  font-size: 16px;
+}
+input:focus, select:focus {
+  outline: 2px solid #fb923c;
+  border-color: var(--orange);
+}
+.result {
+  background: var(--pale);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  padding: 20px;
+}
+.result-name { color: var(--dark); font-size: 14px; }
+.result-number {
+  font-size: clamp(32px, 9vw, 43px);
+  font-weight: 800;
+  color: var(--orange);
+  margin: 10px 0 0;
+  overflow-wrap: anywhere;
+}
+.unit { color: var(--dark); font-weight: 700; }
+.formula {
+  border-top: 1px solid var(--line);
+  margin-top: 17px;
+  padding-top: 14px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+button {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 11px;
+  margin-top: 14px;
+  background: var(--orange);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+button:active { background: #c2410c; }
+.note { color: #78716c; font-size: 12px; line-height: 1.6; }
+.hidden { display: none !important; }
+footer { text-align: center; padding: 8px 18px 28px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🌬️ 산업환기 계산기</h1>
+  <p>국소배기장치 · 필요환기량 산정</p>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>01 · 후드 종류 선택</h2>
+    <label for="hood">후드 종류</label>
+    <select id="hood">
+      <option value="booth">부스식 (밀폐식)</option>
+      <option value="external">외부식 일반형</option>
+      <option value="flanged">외부식 플랜지 일반형</option>
+      <option value="slot">외부식 슬롯형</option>
+      <option value="flangedSlot">외부식 플랜지 슬롯형</option>
+    </select>
+
+    <div id="shapeArea" class="hidden">
+      <label for="shape">후드 모양</label>
+      <select id="shape">
+        <option value="circle">원형 후드</option>
+        <option value="square">사각형 후드</option>
+      </select>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>02 · 설계 조건 입력</h2>
+
+    <div id="vcField">
+      <label for="vc">제어속도 Vc (m/s)</label>
+      <input id="vc" type="number" min="0" step="any" value="0.5">
+    </div>
+
+    <div id="wField">
+      <label for="w">개구면 가로 W (m)</label>
+      <input id="w" type="number" min="0" step="any" value="2">
+    </div>
+
+    <div id="hField">
+      <label for="h">개구면 높이 H (m)</label>
+      <input id="h" type="number" min="0" step="any" value="1.5">
+    </div>
+
+    <div id="xField" class="hidden">
+      <label for="x">오염원까지 거리 X (m)</label>
+      <input id="x" type="number" min="0" step="any" value="0.3">
+    </div>
+
+    <div id="dField" class="hidden">
+      <label for="d">후드 지름 D (m)</label>
+      <input id="d" type="number" min="0" step="any" value="0.5">
+    </div>
+
+    <div id="lField" class="hidden">
+      <label for="l">슬롯 길이 L (m)</label>
+      <input id="l" type="number" min="0" step="any" value="1">
+    </div>
+
+    <div id="vField" class="hidden">
+      <label for="v">슬롯면 속도 V (m/s)</label>
+      <input id="v" type="number" min="0" step="any" value="0.5">
+    </div>
+    <button id="reset" type="button">입력값 초기화</button>
+  </section>
+
+  <section class="panel">
+    <h2>03 · 계산 결과</h2>
+    <div class="result" aria-live="polite">
+      <div id="resultName" class="result-name">부스식 (밀폐식)</div>
+      <div id="result" class="result-number">90.0</div>
+      <div class="unit">m³/min</div>
+      <div class="formula">
+        <strong>적용 계산식</strong>
+        <div id="formula">Q = Vc × W × H × 60</div>
+        <p id="error" class="note"></p>
+      </div>
+    </div>
+  </section>
+
+  <p class="note">
+    결과는 소수점 첫째 자리까지 반올림해 표시합니다.
+    입력값은 모두 미터 및 m/s 단위로 입력하세요.
+    실제 설계에서는 적용 기준의 공식과 단위를 확인하세요.
+  </p>
+</main>
+
+<footer class="note">산업환기 설계 도구</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const fields = [
+  "vcField","wField","hField","xField",
+  "dField","lField","vField"
+];
+
+function show(id, visible) {
+  $(id).classList.toggle("hidden", !visible);
+}
+function val(id) {
+  const raw = $(id).value.trim();
+  if (!raw) return NaN;
+  return Number(raw);
+}
+function valid(ids) {
+  return ids.every(id => Number.isFinite(val(id)) && val(id) > 0);
+}
+function fmt(n) {
+  return n.toLocaleString("ko-KR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  });
+}
+
+function updateFields() {
+  const hood = $("hood").value;
+  const shape = $("shape").value;
+  const booth = hood === "booth";
+  const general = hood === "external" || hood === "flanged";
+  const slot = hood === "slot" || hood === "flangedSlot";
+
+  show("shapeArea", general);
+  fields.forEach(id => show(id, false));
+
+  if (booth) {
+    show("vcField", true);
+    show("wField", true);
+    show("hField", true);
+  } else if (general) {
+    show("vcField", true);
+    show("xField", true);
+    if (shape === "circle") {
+      show("dField", true);
+    } else {
+      show("wField", true);
+      show("hField", true);
+    }
+  } else if (slot) {
+    show("lField", true);
+    show("vField", true);
+    show("xField", true);
+  }
+  calculate();
+}
+
+function calculate() {
+  const hood = $("hood").value;
+  const shape = $("shape").value;
+  let ids = [];
+  let q = NaN;
+  let formula = "";
+
+  if (hood === "booth") {
+    ids = ["vc","w","h"];
+    formula = "Q = Vc × W × H × 60";
+    if (valid(ids)) q = val("vc") * val("w") * val("h") * 60;
+  } else if (hood === "external" || hood === "flanged") {
+    ids = shape === "circle"
+      ? ["vc","x","d"] : ["vc","x","w","h"];
+
+    const prefix = hood === "flanged" ? "0.75 × " : "";
+    if (shape === "circle") {
+      formula = "Q = " + prefix +
+        "Vc × (10X² + π × (D/2)²)";
+    } else {
+      formula = "Q = " + prefix + "Vc × (10X² + W × H)";
+    }
+
+    if (valid(ids)) {
+      const area = shape === "circle"
+        ? Math.PI * (val("d") / 2) ** 2
+        : val("w") * val("h");
+      const factor = hood === "flanged" ? 0.75 : 1;
+      q = factor * val("vc") * (10 * val("x") ** 2 + area);
+    }
+  } else {
+    ids = ["l","v","x"];
+    const factor = hood === "slot" ? 3.7 : 2.6;
+    formula = "Q = " + factor + " × L × V × X";
+    if (valid(ids)) q = factor * val("l") * val("v") * val("x");
+  }
+
+  $("resultName").textContent =
+    $("hood").selectedOptions[0].textContent +
+    ((hood === "external" || hood === "flanged")
+      ? " · " + (shape === "circle" ? "원형" : "사각형") : "");
+  $("formula").textContent = formula;
+
+  if (!valid(ids) || !Number.isFinite(q)) {
+    $("result").textContent = "—";
+    $("error").textContent =
+      "필요한 항목에 0보다 큰 유효한 숫자를 입력하세요.";
+  } else {
+    $("result").textContent = fmt(q);
+    $("error").textContent = "";
+  }
+}
+
+$("hood").addEventListener("change", updateFields);
+$("shape").addEventListener("change", updateFields);
+["vc","w","h","x","d","l","v"].forEach(id =>
+  $(id).addEventListener("input", calculate)
+);
+
+$("reset").addEventListener("click", () => {
+  $("hood").value = "booth";
+  $("shape").value = "circle";
+  $("vc").value = "0.5";
+  $("w").value = "2";
+  $("h").value = "1.5";
+  $("x").value = "0.3";
+  $("d").value = "0.5";
+  $("l").value = "1";
+  $("v").value = "0.5";
+  updateFields();
+});
+
+updateFields();
+</script>
+</body>
+</html>
